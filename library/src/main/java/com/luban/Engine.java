@@ -1,4 +1,4 @@
-package top.zibin.luban;
+package com.luban;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -66,7 +66,15 @@ class Engine {
     return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
   }
 
-  File compress() throws IOException {
+  /**
+   * 压缩图片 动态传参
+   * @param quality 图片质量： 需要对质量做限制，不可以大于98（会超过原图大小），不可以小于40（会比原图的10%还小）.
+   * @return File
+   * @throws IOException IO异常
+   */
+  File compress(int quality) throws IOException {
+    if (quality < 40) { quality = 40; }
+    if (quality > 98) { quality = 98; }
     BitmapFactory.Options options = new BitmapFactory.Options();
     options.inSampleSize = computeSize();
 
@@ -76,7 +84,7 @@ class Engine {
     if (Checker.SINGLE.isJPG(srcImg.open())) {
       tagBitmap = rotatingImage(tagBitmap, Checker.SINGLE.getOrientation(srcImg.open()));
     }
-    tagBitmap.compress(focusAlpha ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG, 60, stream);
+    tagBitmap.compress(focusAlpha ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG, quality, stream);
     tagBitmap.recycle();
 
     FileOutputStream fos = new FileOutputStream(tagImg);

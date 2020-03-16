@@ -1,4 +1,4 @@
-package top.zibin.luban.example;
+package com.luban.example;
 
 class ImageBean {
   private String originArg;

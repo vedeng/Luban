@@ -1,4 +1,4 @@
-package top.zibin.luban;
+package com.luban;
 
 import android.content.Context;
 import android.net.Uri;
@@ -36,6 +36,8 @@ public class Luban implements Handler.Callback {
 
   private Handler mHandler;
 
+  private int compressQuality = 85;
+
   private Luban(Builder builder) {
     this.mTargetDir = builder.mTargetDir;
     this.mRenameListener = builder.mRenameListener;
@@ -43,6 +45,7 @@ public class Luban implements Handler.Callback {
     this.mCompressListener = builder.mCompressListener;
     this.mLeastCompressSize = builder.mLeastCompressSize;
     this.mCompressionPredicate = builder.mCompressionPredicate;
+    this.compressQuality = builder.compressQuality;
     mHandler = new Handler(Looper.getMainLooper(), this);
   }
 
@@ -150,7 +153,7 @@ public class Luban implements Handler.Callback {
    */
   private File get(InputStreamProvider input, Context context) throws IOException {
     try {
-      return new Engine(input, getImageCacheFile(context, Checker.SINGLE.extSuffix(input)), focusAlpha).compress();
+      return new Engine(input, getImageCacheFile(context, Checker.SINGLE.extSuffix(input)), focusAlpha).compress(compressQuality);
     } finally {
       input.close();
     }
@@ -189,14 +192,13 @@ public class Luban implements Handler.Callback {
     if (mCompressionPredicate != null) {
       if (mCompressionPredicate.apply(path.getPath())
           && Checker.SINGLE.needCompress(mLeastCompressSize, path.getPath())) {
-        result = new Engine(path, outFile, focusAlpha).compress();
+        result = new Engine(path, outFile, focusAlpha).compress(compressQuality);
       } else {
         result = new File(path.getPath());
       }
     } else {
       result = Checker.SINGLE.needCompress(mLeastCompressSize, path.getPath()) ?
-          new Engine(path, outFile, focusAlpha).compress() :
-          new File(path.getPath());
+          new Engine(path, outFile, focusAlpha).compress(compressQuality) : new File(path.getPath());
     }
 
     return result;
@@ -204,7 +206,9 @@ public class Luban implements Handler.Callback {
 
   @Override
   public boolean handleMessage(Message msg) {
-    if (mCompressListener == null) return false;
+    if (mCompressListener == null) {
+      return false;
+    }
 
     switch (msg.what) {
       case MSG_COMPRESS_START:
@@ -215,6 +219,8 @@ public class Luban implements Handler.Callback {
         break;
       case MSG_COMPRESS_ERROR:
         mCompressListener.onError((Throwable) msg.obj);
+        break;
+      default:
         break;
     }
     return false;
@@ -230,6 +236,9 @@ public class Luban implements Handler.Callback {
     private CompressionPredicate mCompressionPredicate;
     private List<InputStreamProvider> mStreamProviders;
 
+    /** 图片压缩质量 默认85 */
+    int compressQuality = 85;
+
     Builder(Context context) {
       this.context = context;
       this.mStreamProviders = new ArrayList<>();
@@ -242,6 +251,15 @@ public class Luban implements Handler.Callback {
     public Builder load(InputStreamProvider inputStreamProvider) {
       mStreamProviders.add(inputStreamProvider);
       return this;
+    }
+
+    public Builder setQuality(int quality) {
+      compressQuality = quality;
+      return this;
+    }
+
+    public int getQuality() {
+      return compressQuality;
     }
 
     public Builder load(final File file) {
