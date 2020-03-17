@@ -38,6 +38,8 @@ public class Luban implements Handler.Callback {
 
   private int compressQuality = 85;
 
+  private String resInfo = null;
+
   private Luban(Builder builder) {
     this.mTargetDir = builder.mTargetDir;
     this.mRenameListener = builder.mRenameListener;
@@ -46,6 +48,7 @@ public class Luban implements Handler.Callback {
     this.mLeastCompressSize = builder.mLeastCompressSize;
     this.mCompressionPredicate = builder.mCompressionPredicate;
     this.compressQuality = builder.compressQuality;
+    this.resInfo = builder.resInfo;
     mHandler = new Handler(Looper.getMainLooper(), this);
   }
 
@@ -215,7 +218,7 @@ public class Luban implements Handler.Callback {
         mCompressListener.onStart();
         break;
       case MSG_COMPRESS_SUCCESS:
-        mCompressListener.onSuccess((File) msg.obj);
+        mCompressListener.onSuccess((File) msg.obj, resInfo);
         break;
       case MSG_COMPRESS_ERROR:
         mCompressListener.onError((Throwable) msg.obj);
@@ -235,6 +238,8 @@ public class Luban implements Handler.Callback {
     private OnCompressListener mCompressListener;
     private CompressionPredicate mCompressionPredicate;
     private List<InputStreamProvider> mStreamProviders;
+    /** 源的相关信息 */
+    private String resInfo;
 
     /** 图片压缩质量 默认85 */
     int compressQuality = 85;
@@ -249,6 +254,7 @@ public class Luban implements Handler.Callback {
     }
 
     public Builder load(InputStreamProvider inputStreamProvider) {
+      resInfo = inputStreamProvider.getPath();
       mStreamProviders.add(inputStreamProvider);
       return this;
     }
@@ -263,6 +269,7 @@ public class Luban implements Handler.Callback {
     }
 
     public Builder load(final File file) {
+      resInfo = file.getPath();
       mStreamProviders.add(new InputStreamAdapter() {
         @Override
         public InputStream openInternal() throws IOException {
@@ -277,16 +284,17 @@ public class Luban implements Handler.Callback {
       return this;
     }
 
-    public Builder load(final String string) {
+    public Builder load(final String path) {
+      resInfo = path;
       mStreamProviders.add(new InputStreamAdapter() {
         @Override
         public InputStream openInternal() throws IOException {
-          return new FileInputStream(string);
+          return new FileInputStream(path);
         }
 
         @Override
         public String getPath() {
-          return string;
+          return path;
         }
       });
       return this;
@@ -308,6 +316,7 @@ public class Luban implements Handler.Callback {
     }
 
     public Builder load(final Uri uri) {
+      resInfo = uri.getPath();
       mStreamProviders.add(new InputStreamAdapter() {
         @Override
         public InputStream openInternal() throws IOException {
